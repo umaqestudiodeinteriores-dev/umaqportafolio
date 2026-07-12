@@ -1760,6 +1760,18 @@ function mostrarVista(vista){
   }
 }
 
+/* Salta a una sección después de cambiar de vista. Se usa un pequeño retraso
+   (en vez de solo requestAnimationFrame) para darle tiempo al navegador de
+   terminar de acomodar todo el contenido que se acaba de volver visible —
+   y un salto directo (sin animación) para que nunca se quede a medio camino
+   si el contenido todavía se está reflowando. */
+function irASeccion(idSeccion){
+  setTimeout(() => {
+    const el = document.getElementById(idSeccion);
+    if (el) el.scrollIntoView({ behavior:'auto', block:'start' });
+  }, 60);
+}
+
 function irAContactoConServicio(servicio){
   mostrarVista('portafolio');
   if (typeof cerrarDetallePaquete === 'function') cerrarDetallePaquete();
@@ -1768,9 +1780,7 @@ function irAContactoConServicio(servicio){
     const existe = Array.from(select.options).some(o => o.value === servicio);
     if (existe) select.value = servicio;
   }
-  requestAnimationFrame(() => {
-    document.getElementById('contacto').scrollIntoView({ behavior:'smooth', block:'start' });
-  });
+  irASeccion('contacto');
 }
 
 document.querySelectorAll('.nav-links a[data-destino]').forEach(link => {
@@ -1781,9 +1791,7 @@ document.querySelectorAll('.nav-links a[data-destino]').forEach(link => {
       mostrarVista('paquetes');
     } else {
       mostrarVista('portafolio');
-      requestAnimationFrame(() => {
-        document.getElementById(destino).scrollIntoView({ behavior:'smooth', block:'start' });
-      });
+      irASeccion(destino);
     }
   });
 });
@@ -1791,9 +1799,7 @@ document.querySelectorAll('.nav-cta[data-destino]').forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
     mostrarVista('portafolio');
-    requestAnimationFrame(() => {
-      document.getElementById(link.dataset.destino).scrollIntoView({ behavior:'smooth', block:'start' });
-    });
+    irASeccion(link.dataset.destino);
   });
 });
 
