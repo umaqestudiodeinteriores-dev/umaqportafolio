@@ -21,16 +21,28 @@
     --sage:#5C7266;
     --sage-deep:#3F5147;
     --sage-tint:#E3E9E3;
+    --consult-tint:#EFE6DE;
+    --clay:#A65A2E;
+    --clay-deep:#8A4A24;
+    --clay-tint:#F5E7DA;
     --shadow: 0 1px 2px rgba(91,23,16,.06), 0 8px 24px -12px rgba(91,23,16,.18);
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0; height:100%; overflow:hidden;}
   body{
     background:var(--paper);
     color:var(--ink);
     font-family:'Inter',sans-serif;
     -webkit-font-smoothing:antialiased;
+  }
+  /* Todo el scroll real ocurre AQUÍ DENTRO, no en el documento completo.
+     Esto es clave cuando la página vive embebida en un iframe de tamaño fijo
+     (como en Google Sites): el iframe nunca necesita "crecer" ni recalcular su
+     alto, porque desde afuera esta página siempre mide exactamente 100% de
+     alto — el contenido más largo simplemente se desplaza aquí adentro. */
+  #app-scroll{
+    height:100%; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
   }
   .wrap{max-width:1180px;margin:0 auto; padding:0 clamp(20px,4vw,48px);}
   section{ scroll-margin-top:76px; }
@@ -307,10 +319,320 @@
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast.error{ background:#8C3F2E; }
   .toast.ok{ background:var(--sage-deep); }
+
+  /* Evita el "parpadeo" de texto viejo/placeholder mientras carga el dato real desde Google Sheets */
+  .datos-dinamicos{ opacity:0; transition:opacity .4s ease; }
+  .datos-dinamicos.listo{ opacity:1; }
+
+  /* ==================================================================
+     PAQUETES (vista adicional, fusionada dentro de este mismo archivo)
+     ================================================================== */
+  button{ font:inherit; }
+  :focus-visible{ outline:2px solid var(--brass-deep); outline-offset:2px; }
+
+
+  #vista-paquetes .wrap{max-width:1180px;margin:0 auto; padding:0 clamp(20px,4vw,48px);}
+  #vista-paquetes a{color:inherit;}
+
+  /* ---------- Nav ---------- */
+  #vista-paquetes .navbar{
+    position:sticky; top:0; z-index:50; background:rgba(236,228,208,.94); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  #vista-paquetes .navbar .wrap{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding-top:14px; padding-bottom:14px; }
+  #vista-paquetes .nav-brand{ display:flex; align-items:center; gap:10px; text-decoration:none; }
+  #vista-paquetes .nav-brand .mark{
+    width:34px;height:34px; border-radius:8px; background:var(--ink); color:#fff;
+    display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-weight:600; font-size:14px; flex-shrink:0;
+  }
+  #vista-paquetes .nav-brand .txt b{ display:block; font-family:'Fraunces',serif; font-weight:600; font-size:14px; color:var(--ink); letter-spacing:.03em; }
+  #vista-paquetes .nav-brand .txt span{ display:block; font-size:10px; color:var(--ink-faint); letter-spacing:.05em; text-transform:uppercase; }
+  #vista-paquetes .nav-back{
+    display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--ink-soft);
+    text-decoration:none; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card);
+    transition:background .15s, color .15s;
+  }
+  #vista-paquetes .nav-back:hover{ background:var(--paper-deep); color:var(--ink); }
+  #vista-paquetes .nav-cta{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#fff; background:var(--ink);
+    border:none; border-radius:8px; padding:10px 16px; cursor:pointer; text-decoration:none; white-space:nowrap;
+  }
+  #vista-paquetes .nav-cta:hover{ background:#7A231A; }
+  #vista-paquetes .nav-right{ display:flex; align-items:center; gap:10px; }
+  @media (max-width:600px){ #vista-paquetes .nav-back span{ display:none; } }
+
+  /* ---------- Hero ---------- */
+  #vista-paquetes .hero{
+    background:
+      radial-gradient(900px 460px at 88% -20%, rgba(184,149,90,.18), transparent 60%),
+      var(--ink);
+    color:#fff; padding:52px 0 42px;
+  }
+  #vista-paquetes .hero-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--brass); margin-bottom:12px; display:block;
+  }
+  #vista-paquetes .hero-title{
+    font-family:'Fraunces',serif; font-weight:500; font-size:clamp(28px,4.4vw,46px); line-height:1.1;
+    max-width:680px; margin:0 0 16px;
+  }
+  #vista-paquetes .hero-title em{ font-style:italic; color:var(--brass); }
+  #vista-paquetes .hero-sub{ font-size:15px; color:rgba(246,242,233,.78); max-width:600px; line-height:1.7; margin:0 0 8px; }
+  #vista-paquetes .hero-note{
+    display:inline-flex; align-items:center; gap:8px; margin-top:18px; font-size:12.5px; color:rgba(246,242,233,.65);
+    border:1px dashed rgba(246,242,233,.3); border-radius:10px; padding:9px 14px;
+  }
+
+  /* ---------- Escalera (leyenda de niveles) ---------- */
+  #vista-paquetes .escalera{ padding:16px 0 4px; }
+  #vista-paquetes .escalera-track{
+    display:flex; align-items:stretch; gap:0; border-radius:14px; overflow:hidden; border:1px solid var(--line);
+  }
+  #vista-paquetes .escalera-step{
+    flex:1; padding:14px 16px; background:var(--card); position:relative; text-align:center;
+  }
+  #vista-paquetes .escalera-step + .escalera-step{ border-left:1px solid var(--line); }
+  #vista-paquetes .escalera-step b{ display:block; font-family:'Fraunces',serif; font-size:13.5px; color:var(--ink); margin-bottom:2px; }
+  #vista-paquetes .escalera-step span{ font-size:11px; color:var(--ink-faint); }
+  @media (max-width:700px){ #vista-paquetes .escalera-track{ flex-direction:column; } #vista-paquetes .escalera-step + .escalera-step{ border-left:none; border-top:1px solid var(--line); } }
+
+  /* ---------- Filtros ---------- */
+  #vista-paquetes .filtros-wrap{
+    padding:12px 0 6px; background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  #vista-paquetes .filtros{ display:flex; gap:8px; flex-wrap:wrap; padding-bottom:12px; }
+  #vista-paquetes .filtro-pill{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:var(--ink-soft);
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:8px 16px; cursor:pointer; transition:background .15s,color .15s,border-color .15s;
+    white-space:nowrap;
+  }
+  #vista-paquetes .filtro-pill.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  #vista-paquetes .filtro-pill:not(.active):hover{ background:var(--paper-deep); }
+
+  /* ---------- Grid de paquetes ---------- */
+  #vista-paquetes .paquetes-section{ padding:18px 0 10px; }
+  #vista-paquetes .paquetes-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; }
+  #vista-paquetes .categoria-grupo{ margin-bottom:38px; }
+  #vista-paquetes .categoria-grupo:last-child{ margin-bottom:0; }
+  #vista-paquetes .categoria-grupo-header{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  #vista-paquetes .categoria-grupo-header .cg-icon{
+    width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    font-size:16px; color:#fff; flex-shrink:0;
+  }
+  #vista-paquetes .categoria-grupo-header h2{
+    font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin:0; white-space:nowrap;
+  }
+  #vista-paquetes .categoria-grupo-header .cg-count{
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; color:var(--ink-faint);
+    white-space:nowrap;
+  }
+  #vista-paquetes .categoria-grupo-header .cg-linea{ flex:1; height:1px; background:var(--line); }
+  #vista-paquetes .pk-card{
+    background:var(--card); border-radius:16px; border:1px solid var(--line); box-shadow:var(--shadow);
+    padding:22px 22px 20px; display:flex; flex-direction:column; gap:12px; cursor:pointer;
+    transition:transform .2s ease, box-shadow .2s ease; text-align:left; width:100%; appearance:none;
+    position:relative;
+  }
+  #vista-paquetes .pk-card:hover{ transform:translateY(-3px); box-shadow:0 4px 6px rgba(91,23,16,.08), 0 16px 32px -14px rgba(91,23,16,.28); }
+  #vista-paquetes .pk-card:focus-visible{ transform:translateY(-3px); }
+  #vista-paquetes .pk-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  #vista-paquetes .pk-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; letter-spacing:.01em;
+    padding:5px 12px 5px 6px; border-radius:999px; color:#fff; line-height:1.3;
+  }
+  #vista-paquetes .pk-badge .cod{
+    font-family:'Fraunces',serif; font-weight:700; font-style:italic; font-size:13px;
+    background:rgba(255,255,255,.22); padding:1px 8px; border-radius:999px;
+  }
+  #vista-paquetes .pk-nivel{
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:600; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line); border-radius:999px; padding:4px 11px;
+    white-space:nowrap;
+  }
+  #vista-paquetes .pk-icon-name{ display:flex; align-items:flex-start; gap:12px; }
+  #vista-paquetes .pk-icon{ font-size:26px; line-height:1; flex-shrink:0; }
+  #vista-paquetes .pk-name{ font-family:'Fraunces',serif; font-weight:600; font-size:18.5px; color:var(--ink); line-height:1.25; margin:0; }
+  #vista-paquetes .pk-objetivo{ font-size:13.5px; color:var(--ink-soft); line-height:1.55; margin:0; }
+  #vista-paquetes .pk-perfil{
+    font-size:11.5px; color:var(--ink-faint); border-top:1px dashed var(--line); padding-top:10px; margin-top:2px;
+    line-height:1.5;
+  }
+  #vista-paquetes .pk-perfil b{ color:var(--ink-soft); font-weight:600; }
+  #vista-paquetes .pk-footer{
+    display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:6px;
+  }
+  #vista-paquetes .pk-tags{ display:flex; flex-wrap:wrap; gap:5px; }
+  #vista-paquetes .pk-tag{
+    font-size:10px; color:var(--ink-soft); background:var(--paper); border:1px solid var(--line);
+    border-radius:999px; padding:3px 8px;
+  }
+  #vista-paquetes .pk-ver{
+    font-size:12.5px; font-weight:700; color:var(--ink); white-space:nowrap; display:flex; align-items:center; gap:4px;
+  }
+  #vista-paquetes .pk-card:hover .pk-ver{ color:var(--brass-deep); }
+
+  /* categoría colores */
+  #vista-paquetes .cat-planos .pk-badge{ background:var(--brass-deep); }
+  #vista-paquetes .cat-diseno .pk-badge{ background:var(--ink); }
+  #vista-paquetes .cat-remodelacion .pk-badge{ background:var(--sage-deep); }
+  #vista-paquetes .cat-consultoria .pk-badge{ background:var(--ink-soft); }
+  #vista-paquetes .cat-construccion .pk-badge{ background:var(--clay-deep); }
+
+  /* ---------- Comparativo ---------- */
+  #vista-paquetes .comparativo-section{ padding:26px 0 60px; }
+  #vista-paquetes .comparativo-toggle{
+    display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:16px 20px; cursor:pointer; width:100%; text-align:left;
+    font-family:'Inter',sans-serif; font-size:14.5px; font-weight:600; color:var(--ink);
+  }
+  #vista-paquetes .comparativo-toggle:hover{ background:var(--paper-deep); }
+  #vista-paquetes .comparativo-toggle .chev{ margin-left:auto; transition:transform .2s ease; color:var(--ink-faint); }
+  #vista-paquetes .comparativo-toggle.open .chev{ transform:rotate(180deg); }
+  #vista-paquetes .comparativo-body{
+    max-height:0; overflow:hidden; transition:max-height .35s ease;
+  }
+  #vista-paquetes .comparativo-inner{ padding-top:18px; overflow-x:auto; }
+  #vista-paquetes table.matriz{ border-collapse:collapse; width:100%; min-width:760px; font-size:13px; }
+  #vista-paquetes table.matriz caption{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--brass-deep); margin-bottom:10px; }
+  #vista-paquetes table.matriz th, #vista-paquetes table.matriz td{ padding:9px 10px; border-bottom:1px solid var(--line); text-align:center; }
+  #vista-paquetes table.matriz thead th{
+    background:var(--ink); color:#fff; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    position:sticky; top:0;
+  }
+  #vista-paquetes table.matriz thead th:first-child{ text-align:left; }
+  #vista-paquetes table.matriz td:first-child, #vista-paquetes table.matriz th:first-child{
+    text-align:left; position:sticky; left:0; background:var(--card); font-weight:600; color:var(--ink-soft);
+    min-width:230px;
+  }
+  #vista-paquetes table.matriz thead th:first-child{ background:var(--ink); color:#fff; }
+  #vista-paquetes table.matriz tr.grupo td{
+    background:var(--paper-deep); color:var(--brass-deep); font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; text-align:left;
+  }
+  #vista-paquetes table.matriz td.si{ color:var(--sage-deep); font-weight:700; }
+  #vista-paquetes table.matriz td.no{ color:var(--ink-faint); }
+
+  /* ---------- Modal / detalle ---------- */
+  #vista-paquetes .detalle-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,26,36,.66); z-index:100;
+    overflow-y:auto; padding:32px 16px;
+  }
+  #vista-paquetes .detalle-overlay.open{ display:block; }
+  #vista-paquetes .detalle-box{
+    max-width:720px; margin:0 auto; background:var(--card); border-radius:18px; overflow:hidden;
+    position:relative; box-shadow:0 30px 80px -20px rgba(20,26,36,.5);
+  }
+  #vista-paquetes .detalle-head{
+    padding:30px 32px 22px; color:#fff; position:relative;
+  }
+  #vista-paquetes .detalle-cerrar{
+    position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
+    background:rgba(255,255,255,.16); color:#fff; border:none; font-size:15px; cursor:pointer; z-index:5;
+  }
+  #vista-paquetes .detalle-cerrar:hover{ background:rgba(255,255,255,.28); }
+  #vista-paquetes .detalle-badge{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;
+    background:rgba(255,255,255,.16); padding:5px 14px 5px 7px; border-radius:999px; margin-bottom:14px;
+  }
+  #vista-paquetes .detalle-badge .cod{
+    font-family:'Fraunces',serif; font-weight:700; font-style:italic; font-size:14.5px;
+    background:rgba(255,255,255,.24); padding:1px 10px; border-radius:999px;
+  }
+  #vista-paquetes .detalle-icon{ font-size:34px; margin-bottom:6px; }
+  #vista-paquetes .detalle-nombre{ font-family:'Fraunces',serif; font-size:25px; font-weight:600; margin:0 0 8px; line-height:1.2; }
+  #vista-paquetes .detalle-objetivo{ font-size:14px; opacity:.88; line-height:1.55; max-width:520px; margin:0; }
+  #vista-paquetes .detalle-body{ padding:26px 32px 30px; }
+  #vista-paquetes .detalle-block{ margin-bottom:22px; }
+  #vista-paquetes .detalle-block:last-child{ margin-bottom:0; }
+  #vista-paquetes .detalle-block h4{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--brass-deep); margin:0 0 10px;
+  }
+  #vista-paquetes .detalle-perfil{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0; }
+  #vista-paquetes ul.detalle-lista{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  #vista-paquetes ul.detalle-lista li{ font-size:14px; color:var(--ink-soft); line-height:1.5; display:flex; gap:10px; align-items:flex-start; }
+  #vista-paquetes ul.detalle-lista.incluye li::before{
+    content:"✓"; flex-shrink:0; width:20px; height:20px; border-radius:50%;
+    background:var(--sage-tint); color:var(--sage-deep); font-size:11px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  #vista-paquetes .detalle-entregable{
+    background:var(--paper); border-left:3px solid var(--brass); border-radius:0 10px 10px 0;
+    padding:13px 16px; font-size:13.5px; color:var(--ink); display:flex; gap:10px; align-items:center;
+  }
+  #vista-paquetes .detalle-entregable b{ font-weight:700; }
+
+  /* ---- Panel "No incluye" (llamativo) ---- */
+  #vista-paquetes .excluye-panel{
+    background:linear-gradient(160deg, var(--clay-tint), #F9EEE1 70%);
+    border:1px solid rgba(166,90,46,.28); border-radius:14px; padding:18px 20px;
+  }
+  #vista-paquetes .excluye-panel-head{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  #vista-paquetes .excluye-panel-icon{
+    width:30px; height:30px; border-radius:9px; background:var(--clay-deep); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;
+  }
+  #vista-paquetes .excluye-panel-head h4{
+    font-family:'Fraunces',serif; font-weight:600; font-size:15px; color:var(--clay-deep); margin:0;
+  }
+  #vista-paquetes .excluye-panel-sub{ font-size:12px; color:#9A6A44; margin:2px 0 14px 40px; line-height:1.5; }
+  #vista-paquetes ul.detalle-lista.excluye{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:9px;
+  }
+  #vista-paquetes ul.detalle-lista.excluye li{
+    background:#fff; border:1px solid rgba(166,90,46,.2); border-radius:10px; padding:10px 12px 10px 10px;
+    font-size:13px; box-shadow:0 1px 2px rgba(138,74,36,.06);
+  }
+  #vista-paquetes ul.detalle-lista.excluye li::before{
+    content:"✕"; flex-shrink:0; width:19px; height:19px; border-radius:50%;
+    background:var(--clay-deep); color:#fff; font-size:10px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+  }
+  #vista-paquetes .pendiente-panel{
+    background:linear-gradient(160deg, var(--clay-tint), #F9EEE1 70%);
+    border:1px dashed var(--clay); border-radius:14px; padding:20px 22px; display:flex; gap:14px; align-items:flex-start;
+  }
+  #vista-paquetes .pendiente-panel .ico{ font-size:24px; flex-shrink:0; }
+  #vista-paquetes .pendiente-panel p{ font-size:14px; color:var(--clay-deep); line-height:1.6; margin:0; }
+  #vista-paquetes .pendiente-panel b{ font-weight:700; }
+  #vista-paquetes .detalle-nota{
+    margin-top:20px; padding:14px 16px; background:var(--brass-tint); border-radius:10px;
+    font-size:13px; color:var(--brass-deep); line-height:1.6; display:flex; gap:10px;
+  }
+  #vista-paquetes .detalle-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  #vista-paquetes .detalle-cta{
+    margin-top:24px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  #vista-paquetes .btn-primary{
+    display:inline-flex; align-items:center; gap:8px; background:var(--ink); color:#fff; border:none;
+    border-radius:9px; padding:11px 18px; font-family:'Inter',sans-serif; font-size:13.5px; font-weight:600;
+    cursor:pointer; text-decoration:none; white-space:nowrap;
+  }
+  #vista-paquetes .btn-primary:hover{ background:#7A231A; }
+  #vista-paquetes .btn-secondary{
+    background:transparent; color:var(--ink-soft); border:1px solid var(--line); border-radius:9px;
+    padding:10px 16px; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; cursor:pointer;
+    text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+  }
+  #vista-paquetes .btn-secondary:hover{ background:var(--paper-deep); }
+
+  #vista-paquetes footer.site-footer{ text-align:center; padding:20px 0 44px; color:var(--ink-faint); font-size:12px; }
+  #vista-paquetes footer.site-footer a{ color:var(--ink-soft); text-decoration:underline; }
+
+  @media (prefers-reduced-motion: reduce){
+    #vista-paquetes *{ transition:none !important; animation:none !important; }
+  }
+
 </style>
 </head>
 <body>
 
+<div id="app-scroll">
 <nav class="navbar">
   <div class="wrap">
     <a href="#inicio" class="nav-brand">
@@ -318,9 +640,10 @@
       <span>UMAQ</span>
     </a>
     <div class="nav-links">
-      <a href="#nosotros">Quiénes Somos</a>
-      <a href="#proyectos">Proyectos</a>
-      <a href="#contacto">Contacto</a>
+      <a href="#nosotros" data-destino="nosotros">Quiénes Somos</a>
+      <a href="#proyectos" data-destino="proyectos">Proyectos</a>
+      <a href="#paquetes" data-destino="paquetes">Paquetes</a>
+      <a href="#contacto" data-destino="contacto">Contacto</a>
     </div>
     <div style="display:flex; align-items:center; gap:14px;">
       <!-- 👉 Pega aquí los links reales de tus redes (o borra la línea si no usas alguna) -->
@@ -330,11 +653,25 @@
         <a class="social-icon" data-social="tiktok" href="https://tiktok.com/@TU_USUARIO" target="_blank" rel="noopener" title="TikTok"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 3h-3.2v12.4c0 1.5-1.2 2.7-2.7 2.7s-2.7-1.2-2.7-2.7 1.2-2.7 2.7-2.7c.3 0 .6 0 .9.1V9.6c-.3 0-.6-.1-.9-.1-3.2 0-5.8 2.6-5.8 5.8S7.5 21 10.7 21s5.8-2.6 5.8-5.8V9.4c1.1.8 2.5 1.3 4 1.3V7.5c-2.2 0-3.9-1.8-3.9-4.1V3z"/></svg></a>
         <button class="social-icon" id="btn-whatsapp-nav" title="WhatsApp" style="background:#25D366; color:#fff; border:none; cursor:pointer;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.3c1.4.8 3.1 1.3 4.8 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm5.2 14.3c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.5-.6-2.7-1.2-4.5-3.9-4.6-4.1-.1-.2-1.1-1.4-1.1-2.7 0-1.3.7-1.9.9-2.2.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .5.4.2.5.7 1.7.7 1.8.1.2.1.3 0 .5-.1.2-.1.3-.3.5-.1.2-.3.4-.4.5-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.5 1.5.3.1.4.1.6-.1.2-.2.7-.8.9-1.1.2-.3.4-.2.6-.1.2.1 1.5.7 1.7.8.2.1.4.2.4.3.1.3.1.7-.1 1.2z"/></svg></button>
       </div>
-      <a href="#contacto" class="nav-cta">💬 Cotizar</a>
+      <a href="#contacto" class="nav-cta" data-destino="contacto">💬 Cotizar</a>
     </div>
   </div>
 </nav>
 
+<div class="admin-bar" id="admin-bar">
+  <div class="wrap">
+    <span>🔒 Modo Administrador activo — ves contenido publicado y sin publicar.</span>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn-secondary" id="btn-agregar-proyecto" style="background:#fff;">+ Agregar Proyecto</button>
+      <button class="btn-secondary" id="btn-agregar-paquete" style="background:#fff;">+ Agregar Paquete</button>
+      <button class="btn-secondary" id="btn-editar-nosotros" style="background:#fff;">✎ Editar "Quiénes Somos"</button>
+      <button class="btn-secondary" id="btn-config-redes" style="background:#fff;">⚙ Redes y WhatsApp</button>
+      <button class="btn-secondary" id="btn-salir-admin" style="background:#fff;">Salir</button>
+    </div>
+  </div>
+</div>
+
+<div id="vista-portafolio">
 <div class="hero" id="inicio">
   <div class="wrap">
     <div class="hero-top">
@@ -356,11 +693,11 @@
 <section class="nosotros section-pad" id="nosotros">
   <div class="wrap">
     <span class="section-eyebrow">Quiénes somos</span>
-    <h2 class="section-title" id="nosotros-titulo">Diseño con intención, no solo decoración.</h2>
+    <h2 class="section-title datos-dinamicos" id="nosotros-titulo">Diseño con intención, no solo decoración.</h2>
     <div class="nosotros-grid">
       <div class="nosotros-texto">
-        <p id="nosotros-p1">[EDITA ESTE TEXTO — Cuenta aquí la historia de UMAQ: cómo empezó el estudio, qué los mueve, y qué hace diferente vuestra forma de trabajar. Dos o tres párrafos cortos funcionan mejor que uno largo.]</p>
-        <p id="nosotros-p2">[Por ejemplo: "En UMAQ creemos que cada espacio debe reflejar a quien lo habita. Acompañamos a nuestros clientes desde la primera idea hasta la última terminación, cuidando cada detalle del proceso."]</p>
+        <p class="datos-dinamicos" id="nosotros-p1">[EDITA ESTE TEXTO — Cuenta aquí la historia de UMAQ: cómo empezó el estudio, qué los mueve, y qué hace diferente vuestra forma de trabajar. Dos o tres párrafos cortos funcionan mejor que uno largo.]</p>
+        <p class="datos-dinamicos" id="nosotros-p2">[Por ejemplo: "En UMAQ creemos que cada espacio debe reflejar a quien lo habita. Acompañamos a nuestros clientes desde la primera idea hasta la última terminación, cuidando cada detalle del proceso."]</p>
       </div>
       <div class="valores-list">
         <div class="valor-item">
@@ -380,24 +717,26 @@
   </div>
 </section>
 
-<div class="admin-bar" id="admin-bar">
-  <div class="wrap">
-    <span>🔒 Modo Administrador activo — ves proyectos publicados y sin publicar.</span>
-    <div style="display:flex; gap:8px;">
-      <button class="btn-secondary" id="btn-agregar-proyecto" style="background:#fff;">+ Agregar Proyecto</button>
-      <button class="btn-secondary" id="btn-editar-nosotros" style="background:#fff;">✎ Editar "Quiénes Somos"</button>
-      <button class="btn-secondary" id="btn-config-redes" style="background:#fff;">⚙ Redes y WhatsApp</button>
-      <button class="btn-secondary" id="btn-salir-admin" style="background:#fff;">Salir</button>
-    </div>
-  </div>
-</div>
-
 <section class="section-pad" id="proyectos">
   <div class="wrap">
     <span class="section-eyebrow">Portafolio</span>
     <h2 class="section-title">Nuestros Proyectos</h2>
     <div class="filtros" id="filtros"></div>
     <div class="galeria" id="galeria"><div class="empty-state">Cargando proyectos…</div></div>
+  </div>
+</section>
+
+<section class="section-pad" style="padding-top:0;">
+  <div class="wrap">
+    <span class="section-eyebrow">Servicios</span>
+    <h2 class="section-title">Nuestros Paquetes</h2>
+    <div style="text-align:center;">
+      <p style="font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin:0 0 8px;">Paquetes que te encantarán ✨</p>
+      <p style="font-size:15px; color:var(--ink-soft); line-height:1.8; max-width:560px; margin:0 auto 20px;">
+        De la idea al espacio terminado — encuentra el paquete perfecto para tu proyecto, sin sorpresas ni letra pequeña.
+      </p>
+      <button class="btn-primary" onclick="mostrarVista('paquetes')">Paquetes</button>
+    </div>
   </div>
 </section>
 
@@ -595,8 +934,8 @@
           <div class="txt"><b>Chatea con nosotros</b><span>Respuesta directa por WhatsApp</span></div>
           <button class="btn-hero-whatsapp" id="btn-whatsapp-contacto">💬 Abrir WhatsApp</button>
         </div>
-        <div class="contacto-info-line">📍 <span id="contacto-direccion">[Tu dirección o distrito]</span></div>
-        <div class="contacto-info-line">✉️ <span id="contacto-correo">[tu-correo@umaq.com]</span></div>
+        <div class="contacto-info-line">📍 <span class="datos-dinamicos" id="contacto-direccion">[Tu dirección o distrito]</span></div>
+        <div class="contacto-info-line">✉️ <span class="datos-dinamicos" id="contacto-correo">[tu-correo@umaq.com]</span></div>
         <div class="contacto-redes">
           <span class="contacto-redes-label">Síguenos</span>
           <div class="social-links">
@@ -619,14 +958,12 @@
           <label for="lead-tipo">Tipo de Proyecto</label>
           <select id="lead-tipo">
             <option value="">Selecciona una opción</option>
-            <option>Residencial</option>
-            <option>Hospitality</option>
-            <option>Retail</option>
-            <option>Gastronomía</option>
-            <option>Salud y Estética</option>
-            <option>Oficinas</option>
+            <option>Diseño de Interiores</option>
+            <option>Planos y Licencias</option>
             <option>Remodelación</option>
-            <option>Arquitectura Efímera</option>
+            <option>Construcción</option>
+            <option>Arquitectura Efímera / Stands</option>
+            <option>Consultoría de Diseño Integral</option>
             <option>Otro / No estoy seguro</option>
           </select>
         </div>
@@ -639,6 +976,216 @@
     </div>
   </div>
 </section>
+</div>
+<!-- /vista-portafolio -->
+
+<div id="vista-paquetes" style="display:none;">
+<div class="hero">
+  <div class="wrap">
+    <span class="hero-eyebrow">Nuestros servicios</span>
+    <h1 class="hero-title">Un paquete para <em>cada etapa</em> de tu proyecto.</h1>
+    <p class="hero-sub">Desde un set de planos hasta la entrega llave en mano de tu espacio. Explora qué incluye cada paquete, para quién es y qué queda fuera de alcance — así llegas a la conversación con nosotros sabiendo exactamente qué necesitas.</p>
+    <div class="hero-note">💰 Los montos se definen a la medida de cada proyecto en una cotización personalizada — aquí solo el contenido de cada servicio.</div>
+  </div>
+</div>
+
+<div class="wrap escalera">
+  <div class="escalera-track">
+    <div class="escalera-step"><b>① Punto de entrada</b><span>Planos básicos · Consultoría express</span></div>
+    <div class="escalera-step"><b>② Servicio principal</b><span>Planos con licencia · Diseño de interiores</span></div>
+    <div class="escalera-step"><b>③ Acompañamiento de obra</b><span>Remodelación supervisada</span></div>
+    <div class="escalera-step"><b>④ Solución integral</b><span>Remodelación llave en mano</span></div>
+    <div class="escalera-step"><b>⑤ Obra nueva</b><span>Construcción general</span></div>
+  </div>
+</div>
+
+<div class="filtros-wrap">
+  <div class="wrap">
+    <div class="filtros" id="pk-filtros">
+      <button class="filtro-pill active" data-filtro="todos">Todos</button>
+      <button class="filtro-pill" data-filtro="planos">📐 Planos y Licencias</button>
+      <button class="filtro-pill" data-filtro="diseno">🎨 Diseño de Interiores</button>
+      <button class="filtro-pill" data-filtro="remodelacion">🔨 Remodelación</button>
+      <button class="filtro-pill" data-filtro="consultoria">💡 Consultoría</button>
+      <button class="filtro-pill" data-filtro="construccion">🏗️ Construcción</button>
+    </div>
+  </div>
+</div>
+
+<section class="paquetes-section">
+  <div class="wrap">
+    <div id="paquetes-grid"></div>
+  </div>
+</section>
+
+<section class="comparativo-section">
+  <div class="wrap">
+    <button class="comparativo-toggle" id="btn-comparativo">
+      🗂️ Ver comparativo completo de servicios por paquete
+      <span class="chev">▾</span>
+    </button>
+    <div class="comparativo-body" id="comparativo-body">
+      <div class="comparativo-inner">
+        <table class="matriz" id="tabla-matriz"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  ¿Tienes dudas sobre qué paquete se ajusta a tu proyecto? <a href="javascript:void(0)" onclick="irAContactoConServicio('')">Conversemos aquí</a>.
+</footer>
+
+<!-- ============ DETALLE DE PAQUETE ============ -->
+<div class="detalle-overlay" id="pk-detalle-overlay">
+  <div class="detalle-box">
+    <button class="detalle-cerrar" id="pk-btn-cerrar-detalle" aria-label="Cerrar">✕</button>
+    <div class="detalle-head" id="detalle-head">
+      <span class="detalle-badge" id="detalle-badge"></span>
+      <div class="detalle-icon" id="detalle-icon"></div>
+      <h2 class="detalle-nombre" id="pk-detalle-nombre"></h2>
+      <p class="detalle-objetivo" id="detalle-objetivo"></p>
+    </div>
+    <div class="detalle-body">
+      <div class="detalle-block">
+        <h4>Para quién es</h4>
+        <p class="detalle-perfil" id="detalle-perfil"></p>
+        <div class="detalle-tags" id="detalle-tags"></div>
+      </div>
+      <div class="detalle-block" id="bloque-incluye">
+        <h4>Qué incluye</h4>
+        <ul class="detalle-lista incluye" id="detalle-incluye"></ul>
+      </div>
+      <div class="detalle-block" id="bloque-entregable">
+        <h4>Entregable principal</h4>
+        <div class="detalle-entregable">📦 <b id="detalle-entregable"></b></div>
+      </div>
+      <div class="detalle-block" id="bloque-excluye">
+        <div class="excluye-panel">
+          <div class="excluye-panel-head">
+            <span class="excluye-panel-icon">🚫</span>
+            <h4>Qué NO incluye este paquete</h4>
+          </div>
+          <p class="excluye-panel-sub">Para que empieces con las expectativas claras y sin sorpresas.</p>
+          <ul class="detalle-lista excluye" id="detalle-excluye"></ul>
+        </div>
+      </div>
+      <div class="detalle-block" id="bloque-pendiente" style="display:none;">
+        <div class="pendiente-panel">
+          <span class="ico">🧭</span>
+          <p id="detalle-pendiente-texto"></p>
+        </div>
+      </div>
+      <div class="detalle-nota" id="detalle-nota-wrap">💡 <span id="detalle-nota"></span></div>
+      <div class="detalle-cta">
+        <button type="button" class="btn-primary" id="detalle-cta">Conversemos sobre este paquete</button>
+        <button class="btn-secondary" id="btn-cerrar-detalle-2">Seguir explorando</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div>
+<!-- /vista-paquetes -->
+</div>
+<!-- /app-scroll -->
+
+<!-- ============ AGREGAR / EDITAR PAQUETE (Modo Administrador, funciona en cualquier vista) ============ -->
+<div class="modal-overlay" id="modal-paquete">
+  <div class="modal-box">
+    <button class="modal-close-x" data-close="modal-paquete">✕</button>
+    <h2 id="paquete-modal-titulo">Agregar Paquete</h2>
+    <p class="modal-sub">Solo se ve públicamente si marcas "Publicado".</p>
+    <input type="hidden" id="pk-id">
+
+    <div class="modal-row">
+      <div class="modal-field">
+        <label for="pk-categoria">Categoría</label>
+        <select id="pk-categoria">
+          <option value="planos">📐 Planos y Licencias</option>
+          <option value="diseno">🎨 Diseño de Interiores</option>
+          <option value="remodelacion">🔨 Remodelación</option>
+          <option value="consultoria">💡 Consultoría</option>
+          <option value="construccion">🏗️ Construcción</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label for="pk-codigo">Código</label>
+        <input id="pk-codigo" type="text" placeholder="Ej. P9">
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label for="pk-icono">Ícono (emoji)</label>
+        <input id="pk-icono" type="text" placeholder="Ej. 📐">
+      </div>
+      <div class="modal-field">
+        <label for="pk-nivel">Nivel (escalera de valor)</label>
+        <input id="pk-nivel" type="text" placeholder="Ej. ① Punto de entrada">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label for="pk-nombre">Nombre comercial *</label>
+      <input id="pk-nombre" type="text" placeholder="Ej. Planos Básicos">
+    </div>
+    <div class="modal-field">
+      <label for="pk-objetivo">Objetivo (frase corta de venta) *</label>
+      <textarea id="pk-objetivo" rows="2" placeholder="Ej. Obtener planos básicos para trámites o para presupuestar una remodelación."></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="pk-perfil">Para quién es</label>
+      <textarea id="pk-perfil" rows="2" placeholder="Ej. Propietario que necesita planos para presentar al municipio."></textarea>
+    </div>
+    <div class="modal-field">
+      <label for="pk-tags">Tags (separados por coma)</label>
+      <input id="pk-tags" type="text" placeholder="Ej. Residencial, Airbnb / Hostal">
+    </div>
+
+    <div class="modal-row check-field" style="margin-bottom:6px;">
+      <input id="pk-pendiente" type="checkbox">
+      <label for="pk-pendiente" style="margin:0;">Alcance por definir (no muestra listas, solo un texto de "a coordinar")</label>
+    </div>
+    <div class="modal-field" id="campo-pk-pendiente-texto" style="display:none;">
+      <label for="pk-pendiente-texto">Texto para "alcance por definir"</label>
+      <textarea id="pk-pendiente-texto" rows="2" placeholder="Ej. El alcance se define junto contigo en una visita técnica."></textarea>
+    </div>
+
+    <div id="campos-pk-normales">
+      <div class="modal-field">
+        <label for="pk-incluye">Qué incluye (una línea por ítem)</label>
+        <textarea id="pk-incluye" rows="6" placeholder="Visita técnica y levantamiento de medidas&#10;Concepto de diseño y mood board&#10;..."></textarea>
+      </div>
+      <div class="modal-field">
+        <label for="pk-entregable">Entregable principal</label>
+        <input id="pk-entregable" type="text" placeholder="Ej. Set de planos en PDF y DWG">
+      </div>
+      <div class="modal-field">
+        <label for="pk-no-incluye">Qué NO incluye (una línea por ítem)</label>
+        <textarea id="pk-no-incluye" rows="6" placeholder="Tasas e impuestos municipales&#10;Levantamiento topográfico&#10;..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-field">
+      <label for="pk-nota">Nota / beneficio adicional</label>
+      <textarea id="pk-nota" rows="2" placeholder="Ej. Si luego avanzas con otro paquete, esto se reconoce como parte del proceso."></textarea>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field check-field">
+        <input id="pk-publicado" type="checkbox" checked>
+        <label for="pk-publicado" style="margin:0;">Publicado (visible al público)</label>
+      </div>
+      <div class="modal-field">
+        <label for="pk-orden">Orden dentro de su categoría</label>
+        <input id="pk-orden" type="number" min="0" step="1" placeholder="1, 2, 3...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" data-close="modal-paquete">Cancelar</button>
+      <button class="btn-primary" id="btn-confirmar-paquete">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -832,6 +1379,7 @@ document.getElementById('btn-confirmar-login').addEventListener('click', async (
     cerrarModal('modal-login');
     mostrarToast('Modo administrador activado ✓', 'ok');
     cargarPortafolio();
+    cargarPaquetes();
   } catch(err){
     mostrarToast('No se pudo conectar. Revisa la URL.', 'error');
   }
@@ -841,6 +1389,7 @@ document.getElementById('btn-salir-admin').addEventListener('click', ()=>{
   MODO_ADMIN = false;
   document.getElementById('admin-bar').classList.remove('on');
   cargarPortafolio();
+  cargarPaquetes();
 });
 
 /* ============ AGREGAR / EDITAR PROYECTO ============ */
@@ -908,7 +1457,8 @@ function abrirModalProyecto(p){
   abrirModal('modal-proyecto');
 }
 
-document.getElementById('btn-agregar-proyecto').addEventListener('click', ()=> abrirModalProyecto(null));
+document.getElementById('btn-agregar-proyecto').addEventListener('click', ()=>{ mostrarVista('portafolio'); abrirModalProyecto(null); });
+document.getElementById('btn-agregar-paquete').addEventListener('click', ()=>{ mostrarVista('paquetes'); abrirModalPaquete(null); });
 
 async function confirmarGuardarProyecto(){
   const nombre = document.getElementById('py-nombre').value.trim();
@@ -980,8 +1530,16 @@ async function confirmarEliminarProyecto(p){
 let NUMERO_WHATSAPP = ""; // <-- opcional: pega aquí tu número si no quieres configurarlo desde la página
 let CONFIG_SITIO = { whatsapp:'', instagram:'', facebook:'', tiktok:'', nosotrosTitulo:'', nosotrosP1:'', nosotrosP2:'', direccion:'', correo:'' };
 
+function mostrarDatosDinamicos(){
+  document.querySelectorAll('.datos-dinamicos').forEach(el => el.classList.add('listo'));
+}
+// Si por algún motivo la carga tarda demasiado o falla en silencio, igual mostramos
+// el texto (el de respaldo del archivo) pasado un tiempo máximo, para no dejar la
+// sección invisible.
+setTimeout(mostrarDatosDinamicos, 4000);
+
 async function cargarConfigSitio(){
-  if (!CONFIG.url) return;
+  if (!CONFIG.url){ mostrarDatosDinamicos(); return; }
   try{
     const resp = await fetch(CONFIG.url + '?tipo=config_publico');
     const data = await resp.json();
@@ -998,7 +1556,10 @@ async function cargarConfigSitio(){
     if (CONFIG_SITIO.nosotrosP2) document.getElementById('nosotros-p2').textContent = CONFIG_SITIO.nosotrosP2;
     if (CONFIG_SITIO.direccion) document.getElementById('contacto-direccion').textContent = CONFIG_SITIO.direccion;
     if (CONFIG_SITIO.correo) document.getElementById('contacto-correo').textContent = CONFIG_SITIO.correo;
-  } catch(err){ /* si falla, se quedan los valores por defecto del archivo */ }
+  } catch(err){ /* si falla, se quedan los valores por defecto del archivo */
+  } finally {
+    mostrarDatosDinamicos();
+  }
 }
 
 function abrirWhatsapp(){
@@ -1014,6 +1575,7 @@ document.getElementById('btn-whatsapp-contacto').addEventListener('click', abrir
 
 /* ============ CONFIGURAR REDES Y WHATSAPP (Modo Administrador) ============ */
 document.getElementById('btn-config-redes').addEventListener('click', ()=>{
+  mostrarVista('portafolio');
   document.getElementById('cfgr-whatsapp').value = CONFIG_SITIO.whatsapp || '';
   document.getElementById('cfgr-instagram').value = CONFIG_SITIO.instagram || '';
   document.getElementById('cfgr-facebook').value = CONFIG_SITIO.facebook || '';
@@ -1060,6 +1622,7 @@ document.getElementById('btn-confirmar-config-redes').addEventListener('click', 
 
 /* ============ EDITAR "QUIÉNES SOMOS" (Modo Administrador) ============ */
 document.getElementById('btn-editar-nosotros').addEventListener('click', ()=>{
+  mostrarVista('portafolio');
   document.getElementById('edn-titulo').value = document.getElementById('nosotros-titulo').textContent.trim();
   document.getElementById('edn-p1').value = document.getElementById('nosotros-p1').textContent.trim();
   document.getElementById('edn-p2').value = document.getElementById('nosotros-p2').textContent.trim();
@@ -1151,6 +1714,22 @@ document.getElementById('btn-enviar-lead').addEventListener('click', async ()=>{
   }
 });
 
+/* ============ NAVEGACIÓN DEL MENÚ (scroll explícito, más robusto al publicar) ============ */
+// Además del href="#seccion" nativo, forzamos el scroll por JS. Esto evita que el
+// menú "no lleve a ningún lado" si la plataforma donde publicas la página (Wix,
+// WordPress, Google Sites, etc.) intercepta los clics de los enlaces.
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const destinoId = link.getAttribute('href').slice(1);
+    const destino = document.getElementById(destinoId);
+    if (destino){
+      e.preventDefault();
+      destino.scrollIntoView({ behavior:'smooth', block:'start' });
+      history.pushState(null, '', '#' + destinoId);
+    }
+  });
+});
+
 /* ============ INIT ============ */
 /* 👉 Pega aquí la URL de tu Apps Script para que el portafolio público sepa de dónde leer
    (esto SÍ puede estar en el archivo público — es solo lectura, no incluye tu clave). */
@@ -1158,6 +1737,711 @@ CONFIG.url = "https://script.google.com/macros/s/AKfycbw9ztYLUsUA6mLWokALy1F8Jcw
 
 cargarPortafolio();
 cargarConfigSitio();
+
+
+/* ============ CAMBIO DE VISTA (Portafolio <-> Paquetes) ============ */
+function mostrarVista(vista){
+  const portafolio = document.getElementById('vista-portafolio');
+  const paquetes = document.getElementById('vista-paquetes');
+  // Por seguridad: si había quedado abierto el detalle de un paquete (o el del
+  // portafolio), lo cerramos y liberamos el scroll del body — así cambiar de
+  // vista nunca deja la página "trabada" sin poder desplazarse.
+  if (typeof cerrarDetallePaquete === 'function') cerrarDetallePaquete();
+  const detalleProyecto = document.getElementById('detalle-overlay');
+  if (detalleProyecto) detalleProyecto.classList.remove('open');
+  document.body.style.overflow = '';
+  if (vista === 'paquetes'){
+    portafolio.style.display = 'none';
+    paquetes.style.display = 'block';
+    document.getElementById('app-scroll').scrollTo({ top: 0, behavior: 'instant' });
+  } else {
+    paquetes.style.display = 'none';
+    portafolio.style.display = 'block';
+  }
+}
+
+function irAContactoConServicio(servicio){
+  mostrarVista('portafolio');
+  if (typeof cerrarDetallePaquete === 'function') cerrarDetallePaquete();
+  const select = document.getElementById('lead-tipo');
+  if (servicio && select){
+    const existe = Array.from(select.options).some(o => o.value === servicio);
+    if (existe) select.value = servicio;
+  }
+  requestAnimationFrame(() => {
+    document.getElementById('contacto').scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+}
+
+document.querySelectorAll('.nav-links a[data-destino]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const destino = link.dataset.destino;
+    if (destino === 'paquetes'){
+      mostrarVista('paquetes');
+    } else {
+      mostrarVista('portafolio');
+      requestAnimationFrame(() => {
+        document.getElementById(destino).scrollIntoView({ behavior:'smooth', block:'start' });
+      });
+    }
+  });
+});
+document.querySelectorAll('.nav-cta[data-destino]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    mostrarVista('portafolio');
+    requestAnimationFrame(() => {
+      document.getElementById(link.dataset.destino).scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+  });
+});
+
+/* ============================================================
+   PAQUETES (lógica de la vista, fusionada dentro de este archivo)
+   ============================================================ */
+/* ============ DATOS DE PAQUETES (sin precios) ============ */
+const PAQUETE_CATEGORIAS = {
+  planos:        { label: 'Planos y Licencias', emoji: '📐', color: 'var(--brass-deep)' },
+  diseno:        { label: 'Diseño de Interiores', emoji: '🎨', color: 'var(--ink)' },
+  remodelacion:  { label: 'Remodelación', emoji: '🔨', color: 'var(--sage-deep)' },
+  consultoria:   { label: 'Consultoría', emoji: '💡', color: 'var(--ink-soft)' },
+  construccion:  { label: 'Construcción', emoji: '🏗️', color: 'var(--clay-deep)' },
+};
+
+/* Debe coincidir EXACTO con el texto de las <option> del select #lead-tipo
+   en UMAQ_Banco_Portafolio.html, para que el formulario de contacto llegue
+   con el servicio ya preseleccionado. */
+const CATEGORIA_A_SERVICIO = {
+  planos:        'Planos y Licencias',
+  diseno:        'Diseño de Interiores',
+  remodelacion:  'Remodelación',
+  consultoria:   'Consultoría de Diseño Integral',
+  construccion:  'Construcción',
+};
+
+/* PAQUETES_SEED: los 8 paquetes originales, usados como respaldo mientras no haya
+   datos en el Google Sheet (o si algún visitante entra sin conexión al backend). */
+const PAQUETES_SEED = [
+  {
+    id: 'p1', codigo: 'P1', icono: '📐', categoria: 'planos', nivel: '① Punto de entrada',
+    nombre: 'Planos Básicos',
+    objetivo: 'Obtener planos básicos para trámites o para presupuestar una remodelación con un contratista.',
+    perfil: 'Propietario que necesita planos para presentar al municipio o para cotizar con un contratista.',
+    tags: [],
+    incluye: [
+      'Diseño de planos sin licencia de edificación',
+      'Plano de distribución de todas las especialidades',
+      'Plano de acabados',
+      'Memoria descriptiva básica',
+      'Vistas 2D de los interiores',
+      'Hasta 2 rondas de revisión sobre la propuesta',
+    ],
+    entregable: 'Set de planos en PDF y DWG',
+    noIncluye: [
+      'Tasas e impuestos municipales',
+      'Saneamiento registral previo',
+      'Levantamiento topográfico',
+      'Trámites ante SUNARP',
+      'Certificado de parámetros urbanísticos',
+      'Estudio de suelos / geotecnia',
+      'Proyectos de especialidades (estructuras, sanitarias, eléctricas)',
+      'Tramitación de licencia municipal',
+    ],
+    nota: 'Si más adelante avanzas con un proyecto de diseño interior o de remodelación con nosotros, lo invertido aquí se reconoce como parte de ese siguiente paso. Ideal para tener planos rápidos que mostrarle a tu contratista.',
+  },
+  {
+    id: 'p2', codigo: 'P2', icono: '📋', categoria: 'planos', nivel: '② Servicio principal',
+    nombre: 'Planos con Licencia (Llave en Mano)',
+    objetivo: 'Obtener planos aprobados por el municipio para iniciar obras con respaldo legal.',
+    perfil: 'Propietario o inversionista que necesita la licencia de edificación para su proyecto.',
+    tags: [],
+    incluye: [
+      'Todo lo incluido en Planos Básicos',
+      'Memoria descriptiva técnica para el municipio',
+      'Proyectos de especialidades firmados por especialista (estructuras, sanitarias y eléctricas)',
+      'Gestión del certificado de parámetros urbanísticos',
+      'Gestión y tramitación de la licencia de edificación',
+      'Seguimiento hasta la aprobación municipal',
+      'Hasta 2 rondas de revisión sobre la propuesta',
+    ],
+    entregable: 'Planos visados y licencia de edificación aprobada',
+    noIncluye: [
+      'Tasas e impuestos municipales (a cargo del cliente)',
+      'Saneamiento registral previo',
+      'Levantamiento topográfico',
+      'Trámites ante SUNARP',
+      'Estudio de suelos / geotecnia',
+      'Ejecución de obras civiles',
+      'Más de 2 rondas de observaciones municipales (aplica un cargo adicional)',
+    ],
+    nota: 'Este es el único paquete de planos que incluye el expediente de especialidades firmado y la gestión de parámetros urbanísticos — todo lo que exige el municipio para aprobar tu licencia, en un solo paquete.',
+  },
+  {
+    id: 'p3', codigo: 'P3', icono: '🏠', categoria: 'diseno', nivel: '② Servicio principal',
+    nombre: 'Diseño Interior Residencial',
+    objetivo: 'Transformar tu casa, departamento o alojamiento con una propuesta de diseño profesional.',
+    perfil: 'Propietario de casa, departamento, Airbnb u hostal.',
+    tags: ['Residencial', 'Airbnb / Hostal'],
+    incluye: [
+      'Visita técnica y levantamiento de medidas',
+      'Concepto de diseño y mood board',
+      'Plano de distribución propuesto',
+      'Renders 3D de los ambientes principales (hasta 3 vistas)',
+      'Selección de paleta de colores y acabados',
+      'Lista de materiales y proveedores sugeridos',
+      'Guía de compras de mobiliario y accesorios',
+      'Hasta 2 rondas de revisión sobre la propuesta',
+    ],
+    entregable: 'Dossier de diseño en PDF + renders 3D',
+    noIncluye: [
+      'Tasas e impuestos municipales',
+      'Saneamiento registral previo',
+      'Levantamiento topográfico',
+      'Trámites ante SUNARP',
+      'Certificado de parámetros urbanísticos',
+      'Proyectos de especialidades (estructuras, sanitarias, eléctricas)',
+      'Ejecución de obras o remodelaciones',
+      'Compra de mobiliario o accesorios',
+    ],
+    nota: 'Si luego decides remodelar con nuestra supervisión, este diseño se reconoce como parte de ese siguiente paso. Aplica para casas, departamentos, Airbnb y hostales.',
+  },
+  {
+    id: 'p4', codigo: 'P4', icono: '🏪', categoria: 'diseno', nivel: '② Servicio principal',
+    nombre: 'Diseño Interior Comercial',
+    objetivo: 'Diseñar espacios comerciales funcionales que potencien la experiencia de tus clientes.',
+    perfil: 'Empresario o emprendedor de retail, oficina, restaurante, clínica o feria.',
+    tags: ['Retail', 'Oficinas / Coworking', 'Gastronomía', 'Salud y Estética', 'Stands feriales'],
+    incluye: [
+      'Visita técnica y análisis del local',
+      'Brief comercial y concepto de marca en el espacio',
+      'Plano de distribución funcional',
+      'Renders 3D del local (hasta 4 vistas)',
+      'Diseño de señalética básica',
+      'Selección de materiales y acabados comerciales',
+      'Lista de proveedores especializados',
+      'Para stands: diseño modular 3D y planos de montaje',
+      'Hasta 2 rondas de revisión sobre la propuesta',
+    ],
+    entregable: 'Propuesta 3D completa + planos de distribución',
+    noIncluye: [
+      'Tasas e impuestos municipales',
+      'Saneamiento registral previo',
+      'Levantamiento topográfico',
+      'Trámites ante SUNARP',
+      'Certificado de parámetros urbanísticos',
+      'Certificaciones INDECI / Defensa Civil',
+      'Proyectos de especialidades (estructuras, sanitarias, eléctricas)',
+      'Ejecución de obras o montaje físico',
+      'Compra de equipamiento, mobiliario o señalética',
+    ],
+    nota: 'Adaptamos el enfoque según tu rubro: retail, oficinas y coworking, gastronomía, salud y estética, o stands feriales.',
+  },
+  {
+    id: 'p5', codigo: 'P5', icono: '🔨', categoria: 'remodelacion', nivel: '③ Acompañamiento de obra',
+    nombre: 'Remodelación Supervisada',
+    objetivo: 'Ejecutar tu remodelación con supervisión técnica profesional del estudio.',
+    perfil: 'Cliente que ya tiene un diseño y quiere supervisión de obra.',
+    tags: [],
+    incluye: [
+      'Visita técnica y diagnóstico del estado actual',
+      'Informe previo de condiciones y riesgos',
+      'Supervisión del avance de obra',
+      'Control de calidad de materiales y acabados',
+      'Coordinación con contratistas y maestros',
+      'Informes de avance periódicos',
+      'Acta de entrega final',
+    ],
+    entregable: 'Informe técnico + acta de entrega',
+    noIncluye: [
+      'Equipamiento y mobiliario',
+      'Puntos de luz / tomacorrientes nuevos',
+      'Cambio de tuberías de agua y desagüe',
+      'Picado de paredes o cielos',
+      'Vicios ocultos al picar (se cotizan aparte al descubrirse)',
+      'Obras estructurales / refuerzo sísmico',
+      'Materiales de construcción',
+      'Trámites municipales / INDECI',
+    ],
+    nota: 'La mano de obra y los materiales se cotizan de forma independiente. Recomendamos partir de un Diseño Interior (Residencial o Comercial) antes de esta etapa. Cualquier imprevisto de obra se te informa y cotiza aparte — ningún trabajo adicional se ejecuta sin tu aprobación por escrito.',
+  },
+  {
+    id: 'p6', codigo: 'P6', icono: '🏆', categoria: 'remodelacion', nivel: '④ Solución integral',
+    nombre: 'Remodelación Llave en Mano',
+    objetivo: 'Diseño + ejecución + supervisión completa: tú solo apruebas y recibes tu espacio terminado.',
+    perfil: 'Cliente que quiere cero preocupaciones y delega todo el proceso al estudio.',
+    tags: [],
+    incluye: [
+      'Todo lo incluido en el Diseño Interior (Residencial o Comercial)',
+      'Selección y compra de materiales',
+      'Coordinación y contratación de mano de obra',
+      'Demolición y preparación de superficies',
+      'Pintura, enchape, pisos y acabados',
+      'Instalación de mobiliario y accesorios',
+      'Supervisión integral desde el inicio hasta la entrega',
+      'Fotografías profesionales del espacio terminado',
+    ],
+    entregable: 'Espacio terminado + fotografías finales',
+    noIncluye: [
+      'Cambio de tuberías de agua y desagüe (cotización adicional)',
+      'Puntos eléctricos nuevos / tablero (cotización adicional)',
+      'Vicios ocultos al picar (se notifican y cotizan al descubrirse)',
+      'Obras estructurales / refuerzo sísmico',
+      'Trámites municipales (pueden incluirse con cotización adicional)',
+      'Electrodomésticos y equipos',
+    ],
+    nota: 'Un solo equipo se encarga de todo el proceso — tú solo apruebas y recibes tu espacio listo. Si surge algo no previsto en el camino (como un imprevisto de tuberías o electricidad), te lo notificamos y cotizamos antes de tocarlo — nunca sin tu aprobación por escrito.',
+  },
+  {
+    id: 'p7', codigo: 'P7', icono: '💡', categoria: 'consultoria', nivel: '① Punto de entrada',
+    nombre: 'Consultoría de Diseño Integral',
+    objetivo: 'Orientación profesional rápida para mejorar tu espacio sin una remodelación mayor.',
+    perfil: 'Cliente con presupuesto acotado que quiere mejorar su espacio.',
+    tags: ['Sesión única'],
+    incluye: [
+      'Visita al espacio (o videollamada con fotos)',
+      'Análisis de la distribución actual',
+      'Recomendaciones de color, luz y decoración',
+      'Lista de cambios de bajo costo y alto impacto',
+      'Informe escrito de recomendaciones',
+    ],
+    entregable: 'Informe de recomendaciones en PDF',
+    noIncluye: [
+      'Planos técnicos de ningún tipo',
+      'Renders 3D',
+      'Tramitación municipal o ante SUNARP',
+      'Supervisión o ejecución de obras',
+      'Compra de materiales o mobiliario',
+      'Levantamiento topográfico',
+    ],
+    nota: 'Si después decides avanzar con un diseño o remodelación completa, esta consultoría se reconoce como parte de ese servicio. Ideal como primer acercamiento.',
+  },
+  {
+    id: 'p8', codigo: 'P8', icono: '🏗️', categoria: 'construccion', nivel: '⑤ Obra nueva',
+    nombre: 'Construcción General',
+    objetivo: 'Ejecutar proyectos de construcción nueva, ampliación u obra integral que van más allá de una remodelación.',
+    perfil: 'Propietario o empresa con un proyecto de obra nueva o ampliación mayor.',
+    tags: ['Previa evaluación'],
+    pendiente: true,
+    pendienteTexto: 'Este es un servicio a medida: el alcance, los tiempos y qué incluye o no se definen junto contigo en una consultoría inicial y una visita técnica al terreno o proyecto. Cuéntanos qué tienes en mente y armamos la propuesta contigo.',
+    entregable: 'Propuesta técnica y económica a medida',
+    nota: 'Ideal si tu proyecto va más allá de remodelar un espacio existente — obra nueva, ampliación o construcción desde cero.',
+  },
+];
+
+/* ============ MATRIZ COMPARATIVA (servicios x paquete) ============ */
+const MATRIZ = [
+  { grupo: 'Planos' },
+  { servicio: 'Plano de distribución (2D)', valores: [1,1,1,1,0,1,0,0] },
+  { servicio: 'Plano de acabados', valores: [1,1,1,1,0,1,0,0] },
+  { servicio: 'Memoria descriptiva básica', valores: [1,1,0,0,0,0,0,0] },
+  { servicio: 'Planos de especialidades firmados (est./san./eléc.)', valores: [0,1,0,0,0,0,0,0] },
+  { servicio: 'Gestión de parámetros urbanísticos', valores: [0,1,0,0,0,0,0,0] },
+  { servicio: 'Tramitación de licencia municipal', valores: [0,1,0,0,0,0,0,0] },
+  { grupo: 'Diseño de interiores' },
+  { servicio: 'Visita técnica y levantamiento de medidas', valores: [0,0,1,1,1,1,0,0] },
+  { servicio: 'Concepto de diseño + mood board', valores: [0,0,1,1,0,1,0,0] },
+  { servicio: 'Renders 3D de ambientes', valores: [0,0,1,1,0,1,0,0] },
+  { servicio: 'Selección de paleta de colores y acabados', valores: [0,0,1,1,0,1,0,0] },
+  { servicio: 'Brief comercial y concepto de marca', valores: [0,0,0,1,0,0,0,0] },
+  { servicio: 'Diseño señalética básica', valores: [0,0,0,1,0,0,0,0] },
+  { servicio: 'Lista de materiales y proveedores', valores: [0,0,1,1,0,1,0,0] },
+  { servicio: 'Guía de compras (mobiliario / accesorios)', valores: [0,0,1,1,0,0,0,0] },
+  { grupo: 'Remodelación' },
+  { servicio: 'Diagnóstico e informe previo de riesgos', valores: [0,0,0,0,1,1,0,0] },
+  { servicio: 'Supervisión de avance de obra', valores: [0,0,0,0,1,1,0,0] },
+  { servicio: 'Control de calidad de materiales', valores: [0,0,0,0,1,1,0,0] },
+  { servicio: 'Coordinación con contratistas', valores: [0,0,0,0,1,1,0,0] },
+  { servicio: 'Compra y gestión de materiales', valores: [0,0,0,0,0,1,0,0] },
+  { servicio: 'Ejecución de obras (demolición, acabados)', valores: [0,0,0,0,0,1,0,0] },
+  { servicio: 'Instalación de mobiliario', valores: [0,0,0,0,0,1,0,0] },
+  { servicio: 'Fotografías finales profesionales', valores: [0,0,0,0,0,1,0,0] },
+  { servicio: 'Acta de entrega', valores: [0,0,0,0,1,1,0,0] },
+  { grupo: 'Consultoría' },
+  { servicio: 'Análisis de distribución actual', valores: [0,0,0,0,0,0,1,0] },
+  { servicio: 'Recomendaciones de color, luz y decoración', valores: [0,0,0,0,0,0,1,0] },
+  { servicio: 'Informe escrito de recomendaciones', valores: [0,0,0,0,0,0,1,0] },
+  { grupo: 'Construcción' },
+  { servicio: 'Construcción general (obra nueva / ampliación)', valores: [0,0,0,0,0,0,0,1] },
+];
+const CODIGOS_MATRIZ = ['P1','P2','P3','P4','P5','P6','P7','P8'];
+
+/* ============ RENDER: TARJETAS ============ */
+const grid = document.getElementById('paquetes-grid');
+const ORDEN_CATEGORIAS = ['planos', 'diseno', 'remodelacion', 'consultoria', 'construccion'];
+let PAQUETES = [];
+let FILTRO_PAQUETE_ACTIVO = 'todos';
+
+function parseListaTexto(txt){
+  return String(txt||'').split('\n').map(s => s.replace(/^[•\-]\s*/, '').trim()).filter(Boolean);
+}
+
+function parseFilaPaquete(r){
+  return {
+    id: String(r['ID']||''),
+    codigo: r['Código']||'',
+    icono: r['Icono']||'📦',
+    categoria: r['Categoría']||'planos',
+    nivel: r['Nivel']||'',
+    nombre: r['Nombre']||'',
+    objetivo: r['Objetivo']||'',
+    perfil: r['Perfil']||'',
+    tags: String(r['Tags']||'').split(',').map(s=>s.trim()).filter(Boolean),
+    incluye: parseListaTexto(r['Incluye']),
+    entregable: r['Entregable Principal']||'',
+    noIncluye: parseListaTexto(r['No Incluye']),
+    nota: r['Nota']||'',
+    pendiente: String(r['Pendiente']||'') === 'Sí',
+    pendienteTexto: r['Texto Pendiente']||'',
+    publicado: String(r['Publicado']||'Sí') === 'Sí',
+    orden: Number(r['Orden']) || 0,
+  };
+}
+
+async function cargarPaquetes(){
+  try{
+    let url;
+    if (MODO_ADMIN){
+      url = CONFIG.url + '?clave=' + encodeURIComponent(CONFIG.clave) + '&tipo=paquetes_admin';
+    } else {
+      url = CONFIG.url + '?tipo=paquetes_publico';
+    }
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.mensaje || 'error');
+    if (data.datos && data.datos.length){
+      PAQUETES = data.datos.map(parseFilaPaquete);
+    } else {
+      PAQUETES = MODO_ADMIN ? [] : PAQUETES_SEED;
+    }
+  } catch(err){
+    PAQUETES = MODO_ADMIN ? [] : PAQUETES_SEED;
+  }
+  renderCards(FILTRO_PAQUETE_ACTIVO);
+}
+
+async function importarPaquetesIniciales(){
+  const boton = document.getElementById('btn-importar-paquetes');
+  if (boton){ boton.disabled = true; boton.textContent = 'Importando…'; }
+  const ahora = new Date();
+  try{
+    for (let i = 0; i < PAQUETES_SEED.length; i++){
+      const p = PAQUETES_SEED[i];
+      const payload = {
+        clave: CONFIG.clave,
+        accion: 'guardar_paquete',
+        id: p.id,
+        codigo: p.codigo,
+        icono: p.icono,
+        categoria: p.categoria,
+        nivel: p.nivel,
+        nombre: p.nombre,
+        objetivo: p.objetivo,
+        perfil: p.perfil,
+        tags: (p.tags||[]).join(', '),
+        incluye: (p.incluye||[]).map(x=>'• '+x).join('\n'),
+        entregable: p.entregable||'',
+        noIncluye: (p.noIncluye||[]).map(x=>'• '+x).join('\n'),
+        nota: p.nota||'',
+        pendiente: !!p.pendiente,
+        pendienteTexto: p.pendienteTexto||'',
+        publicado: true,
+        orden: i + 1,
+        fecha: ahora.toLocaleDateString('es-PE'),
+      };
+      await fetch(CONFIG.url, {
+        method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+      });
+    }
+    mostrarToast('Paquetes importados ✓', 'ok');
+    await cargarPaquetes();
+  } catch(err){
+    mostrarToast('No se pudo completar la importación.', 'error');
+  } finally {
+    if (boton){ boton.disabled = false; boton.textContent = '📥 Importar paquetes iniciales'; }
+  }
+}
+
+/* ============ AGREGAR / EDITAR / ELIMINAR PAQUETE (Modo Administrador) ============ */
+document.getElementById('pk-pendiente').addEventListener('change', (e)=>{
+  document.getElementById('campo-pk-pendiente-texto').style.display = e.target.checked ? 'block' : 'none';
+  document.getElementById('campos-pk-normales').style.display = e.target.checked ? 'none' : 'block';
+});
+
+function abrirModalPaquete(p){
+  document.getElementById('paquete-modal-titulo').textContent = p ? 'Editar Paquete' : 'Agregar Paquete';
+  document.getElementById('pk-id').value = p ? p.id : '';
+  document.getElementById('pk-categoria').value = p ? p.categoria : 'planos';
+  document.getElementById('pk-codigo').value = p ? p.codigo : '';
+  document.getElementById('pk-icono').value = p ? p.icono : '📦';
+  document.getElementById('pk-nivel').value = p ? p.nivel : '';
+  document.getElementById('pk-nombre').value = p ? p.nombre : '';
+  document.getElementById('pk-objetivo').value = p ? p.objetivo : '';
+  document.getElementById('pk-perfil').value = p ? p.perfil : '';
+  document.getElementById('pk-tags').value = p ? (p.tags||[]).join(', ') : '';
+  document.getElementById('pk-incluye').value = p ? (p.incluye||[]).join('\n') : '';
+  document.getElementById('pk-entregable').value = p ? p.entregable : '';
+  document.getElementById('pk-no-incluye').value = p ? (p.noIncluye||[]).join('\n') : '';
+  document.getElementById('pk-nota').value = p ? p.nota : '';
+  document.getElementById('pk-publicado').checked = p ? !!p.publicado : true;
+  document.getElementById('pk-orden').value = p ? (p.orden||'') : '';
+  document.getElementById('pk-pendiente').checked = p ? !!p.pendiente : false;
+  document.getElementById('pk-pendiente-texto').value = p ? (p.pendienteTexto||'') : '';
+  document.getElementById('campo-pk-pendiente-texto').style.display = (p && p.pendiente) ? 'block' : 'none';
+  document.getElementById('campos-pk-normales').style.display = (p && p.pendiente) ? 'none' : 'block';
+  abrirModal('modal-paquete');
+}
+
+async function confirmarGuardarPaquete(){
+  const nombre = document.getElementById('pk-nombre').value.trim();
+  const objetivo = document.getElementById('pk-objetivo').value.trim();
+  if (!nombre || !objetivo){
+    mostrarToast('Nombre comercial y Objetivo son obligatorios.', 'error');
+    return;
+  }
+  const idExistente = document.getElementById('pk-id').value;
+  const ahora = new Date();
+  const esPendiente = document.getElementById('pk-pendiente').checked;
+
+  const payload = {
+    clave: CONFIG.clave,
+    accion: 'guardar_paquete',
+    id: idExistente || ('PK-' + ahora.getTime()),
+    codigo: document.getElementById('pk-codigo').value.trim(),
+    icono: document.getElementById('pk-icono').value.trim() || '📦',
+    categoria: document.getElementById('pk-categoria').value,
+    nivel: document.getElementById('pk-nivel').value.trim(),
+    nombre: nombre,
+    objetivo: objetivo,
+    perfil: document.getElementById('pk-perfil').value.trim(),
+    tags: document.getElementById('pk-tags').value.trim(),
+    incluye: esPendiente ? '' : document.getElementById('pk-incluye').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>'• '+s).join('\n'),
+    entregable: esPendiente ? '' : document.getElementById('pk-entregable').value.trim(),
+    noIncluye: esPendiente ? '' : document.getElementById('pk-no-incluye').value.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>'• '+s).join('\n'),
+    nota: document.getElementById('pk-nota').value.trim(),
+    pendiente: esPendiente,
+    pendienteTexto: esPendiente ? document.getElementById('pk-pendiente-texto').value.trim() : '',
+    publicado: document.getElementById('pk-publicado').checked,
+    orden: Number(document.getElementById('pk-orden').value) || 0,
+    fecha: ahora.toLocaleDateString('es-PE'),
+  };
+
+  const boton = document.getElementById('btn-confirmar-paquete');
+  boton.disabled = true; boton.textContent = 'Guardando...';
+  try{
+    const resp = await fetch(CONFIG.url, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (data.status === 'ok'){
+      mostrarToast(data.mensaje || 'Guardado ✓', 'ok');
+      cerrarModal('modal-paquete');
+      cargarPaquetes();
+    } else {
+      mostrarToast('Error: ' + (data.mensaje||''), 'error');
+    }
+  } catch(err){
+    mostrarToast('No se pudo conectar con Google Sheets.', 'error');
+  } finally {
+    boton.disabled = false; boton.textContent = 'Guardar';
+  }
+}
+document.getElementById('btn-confirmar-paquete').addEventListener('click', confirmarGuardarPaquete);
+
+async function confirmarEliminarPaquete(p){
+  if (!confirm('¿Eliminar "' + p.nombre + '"? Esta acción no se puede deshacer.')) return;
+  try{
+    const resp = await fetch(CONFIG.url, {
+      method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ clave: CONFIG.clave, accion:'eliminar_paquete', id: p.id })
+    });
+    const data = await resp.json();
+    if (data.status === 'ok'){ mostrarToast('Eliminado ✓', 'ok'); cargarPaquetes(); }
+    else mostrarToast('Error: ' + (data.mensaje||''), 'error');
+  } catch(err){ mostrarToast('No se pudo conectar.', 'error'); }
+}
+
+function cardHTML(p){
+  return `
+    <div class="pk-card cat-${p.categoria}" data-id="${p.id}" tabindex="0" role="button">
+      ${MODO_ADMIN ? `<span class="estado-publicado" style="background:${p.publicado?'#3F5147':'#8C3F2E'}; color:#fff;">${p.publicado?'Publicado':'Borrador'}</span>` : ''}
+      ${MODO_ADMIN ? `<div class="card-admin-actions" style="left:auto; right:12px;">
+        <button class="btn-editar-pk" title="Editar">✏️</button>
+        <button class="btn-eliminar-pk" title="Eliminar">🗑️</button>
+      </div>` : ''}
+      <div class="pk-top">
+        <span class="pk-badge"><span class="cod">${p.codigo}</span> · ${PAQUETE_CATEGORIAS[p.categoria].emoji} ${PAQUETE_CATEGORIAS[p.categoria].label}</span>
+        <span class="pk-nivel">${p.nivel}</span>
+      </div>
+      <div class="pk-icon-name">
+        <span class="pk-icon">${p.icono}</span>
+        <h3 class="pk-name">${p.nombre}</h3>
+      </div>
+      <p class="pk-objetivo">${p.objetivo}</p>
+      <p class="pk-perfil"><b>Para quién es:</b> ${p.perfil}</p>
+      <div class="pk-footer">
+        <div class="pk-tags">${p.tags.map(t => `<span class="pk-tag">${t}</span>`).join('')}</div>
+        <span class="pk-ver">${p.pendiente ? 'Conocer más' : 'Ver qué incluye'} →</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCards(filtro){
+  filtro = filtro || 'todos';
+  grid.innerHTML = '';
+
+  if (!PAQUETES.length){
+    grid.innerHTML = MODO_ADMIN ? `
+      <div class="empty-state">
+        <p style="font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin:0 0 8px;">Todavía no hay paquetes en tu Google Sheet ✨</p>
+        <p style="margin:0 0 18px;">Puedes importar los 8 paquetes iniciales con un clic, y desde ahí editarlos cuando quieras.</p>
+        <button class="btn-primary" id="btn-importar-paquetes">📥 Importar paquetes iniciales</button>
+      </div>` : `
+      <div class="empty-state"><p>Muy pronto vas a ver aquí nuestros paquetes.</p></div>`;
+    if (MODO_ADMIN){
+      document.getElementById('btn-importar-paquetes').addEventListener('click', importarPaquetesIniciales);
+    }
+    return;
+  }
+
+  if (filtro === 'todos'){
+    ORDEN_CATEGORIAS.forEach(catKey => {
+      const items = PAQUETES.filter(p => p.categoria === catKey).sort((a,b)=>(a.orden||0)-(b.orden||0));
+      if (!items.length) return;
+      const cat = PAQUETE_CATEGORIAS[catKey];
+      const grupo = document.createElement('div');
+      grupo.className = 'categoria-grupo';
+      grupo.innerHTML = `
+        <div class="categoria-grupo-header">
+          <span class="cg-icon" style="background:${cat.color}">${cat.emoji}</span>
+          <h2>${cat.label}</h2>
+          <span class="cg-count">${items.length} paquete${items.length > 1 ? 's' : ''}</span>
+          <span class="cg-linea"></span>
+        </div>
+        <div class="paquetes-grid">${items.map(cardHTML).join('')}</div>
+      `;
+      grid.appendChild(grupo);
+    });
+  } else {
+    const items = PAQUETES.filter(p => p.categoria === filtro).sort((a,b)=>(a.orden||0)-(b.orden||0));
+    const contenedor = document.createElement('div');
+    contenedor.className = 'paquetes-grid';
+    contenedor.innerHTML = items.map(cardHTML).join('');
+    grid.appendChild(contenedor);
+  }
+
+  grid.querySelectorAll('.pk-card').forEach(card => {
+    card.addEventListener('click', () => abrirDetallePaquete(card.dataset.id));
+    card.addEventListener('keydown', (e)=>{
+      if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.card-admin-actions')){
+        e.preventDefault();
+        abrirDetallePaquete(card.dataset.id);
+      }
+    });
+    if (MODO_ADMIN){
+      const p = PAQUETES.find(x => x.id === card.dataset.id);
+      card.querySelector('.btn-editar-pk').addEventListener('click', (e)=>{ e.stopPropagation(); abrirModalPaquete(p); });
+      card.querySelector('.btn-eliminar-pk').addEventListener('click', (e)=>{ e.stopPropagation(); confirmarEliminarPaquete(p); });
+    }
+  });
+}
+
+/* ============ FILTROS ============ */
+document.querySelectorAll('#pk-filtros .filtro-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#pk-filtros .filtro-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    FILTRO_PAQUETE_ACTIVO = btn.dataset.filtro;
+    renderCards(FILTRO_PAQUETE_ACTIVO);
+  });
+});
+
+/* ============ MODAL DE DETALLE ============ */
+const overlay = document.getElementById('pk-detalle-overlay');
+
+function abrirDetallePaquete(id){
+  const p = PAQUETES.find(x => x.id === id);
+  if (!p) return;
+  const cat = PAQUETE_CATEGORIAS[p.categoria];
+  document.getElementById('detalle-head').style.background =
+    `linear-gradient(135deg, ${cat.color}, ${cat.color})`;
+  document.getElementById('detalle-badge').innerHTML = `<span class="cod">${p.codigo}</span> · ${cat.emoji} ${cat.label}`;
+  document.getElementById('detalle-icon').textContent = p.icono;
+  document.getElementById('pk-detalle-nombre').textContent = p.nombre;
+  document.getElementById('detalle-objetivo').textContent = p.objetivo;
+  document.getElementById('detalle-perfil').textContent = p.perfil;
+  document.getElementById('detalle-tags').innerHTML = p.tags.map(t => `<span class="pk-tag">${t}</span>`).join('');
+  document.getElementById('detalle-entregable').textContent = p.entregable;
+  document.getElementById('detalle-nota').textContent = p.nota;
+
+  const servicio = CATEGORIA_A_SERVICIO[p.categoria] || '';
+  document.getElementById('detalle-cta').dataset.servicio = servicio;
+
+  const bloquePendiente = document.getElementById('bloque-pendiente');
+  const bloqueIncluye = document.getElementById('bloque-incluye');
+  const bloqueExcluye = document.getElementById('bloque-excluye');
+
+  if (p.pendiente){
+    bloqueIncluye.style.display = 'none';
+    bloqueExcluye.style.display = 'none';
+    bloquePendiente.style.display = 'block';
+    document.getElementById('detalle-pendiente-texto').innerHTML = `<b>Alcance por definir.</b> ${p.pendienteTexto}`;
+  } else {
+    bloqueIncluye.style.display = '';
+    bloqueExcluye.style.display = '';
+    bloquePendiente.style.display = 'none';
+    document.getElementById('detalle-incluye').innerHTML = p.incluye.map(i => `<li>${i}</li>`).join('');
+    document.getElementById('detalle-excluye').innerHTML = p.noIncluye.map(i => `<li>${i}</li>`).join('');
+  }
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarDetallePaquete(){
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('pk-btn-cerrar-detalle').addEventListener('click', cerrarDetallePaquete);
+document.getElementById('btn-cerrar-detalle-2').addEventListener('click', cerrarDetallePaquete);
+document.getElementById('detalle-cta').addEventListener('click', () => {
+  irAContactoConServicio(document.getElementById('detalle-cta').dataset.servicio || '');
+});
+overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrarDetallePaquete(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) cerrarDetallePaquete(); });
+
+/* ============ TABLA COMPARATIVA ============ */
+function renderMatriz(){
+  const tabla = document.getElementById('tabla-matriz');
+  let html = `<caption>Servicios incluidos por paquete</caption><thead><tr><th>Servicio / Entregable</th>`;
+  CODIGOS_MATRIZ.forEach(c => { html += `<th>${c}</th>`; });
+  html += `</tr></thead><tbody>`;
+  MATRIZ.forEach(row => {
+    if (row.grupo){
+      html += `<tr class="grupo"><td colspan="${CODIGOS_MATRIZ.length + 1}">${row.grupo}</td></tr>`;
+    } else {
+      html += `<tr><td>${row.servicio}</td>`;
+      row.valores.forEach(v => { html += `<td class="${v ? 'si' : 'no'}">${v ? '✓' : '–'}</td>`; });
+      html += `</tr>`;
+    }
+  });
+  html += `</tbody>`;
+  tabla.innerHTML = html;
+}
+
+const btnComparativo = document.getElementById('btn-comparativo');
+const bodyComparativo = document.getElementById('comparativo-body');
+btnComparativo.addEventListener('click', () => {
+  const isOpen = btnComparativo.classList.toggle('open');
+  bodyComparativo.style.maxHeight = isOpen ? bodyComparativo.scrollHeight + 'px' : '0px';
+});
+
+/* ============ INIT ============ */
+cargarPaquetes();
+renderMatriz();
+
 </script>
 </body>
 </html>
